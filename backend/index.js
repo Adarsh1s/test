@@ -1,45 +1,42 @@
 const express = require("express");
 const { ClerkExpressWithAuth } = require("@clerk/clerk-sdk-node");
-const app = express();
+const requireAuth = require("./middleware/requireAuth");
+const userRoutes = require("./routes/user");
+require("dotenv").config();
 
-// Clerk Middleware
+const app = express();
+app.use(express.json());
+
+// ✅ Clerk Middleware
 app.use(ClerkExpressWithAuth());
 
-// Example protected route
-app.get("/private", (req, res) => {
-  const userId = req.auth.userId;
-  if (!userId) return res.status(401).send("Unauthorized");
-  res.send(`Hello, user ${userId}`);
-});
-
-
-const express = require("express");
-const requireAuth = require("./middleware/requireAuth");
-
-const app = express();
-
+// ✅ Public route
 app.get("/public", (req, res) => {
   res.send("This route is public. Anyone can access.");
 });
 
-// ✅ This route requires the user to be logged in
-app.get("/private", requireAuth, (req, res) => {
+// ✅ Clerk-protected route
+app.get("/private", (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) return res.status(401).send("Unauthorized");
+  res.send(`Hello, user ${userId}`);
+});
+
+// ✅ App-level protected route using custom middleware
+app.get("/secure", requireAuth, (req, res) => {
   res.send(`Hello user ${req.userId}, you're authorized!`);
 });
 
-// ✅ Image upload route protected
+// ✅ Protected upload route
 app.post("/upload", requireAuth, async (req, res) => {
-  // Only logged-in users can upload
+  // Handle file/image logic here
   res.send("Image uploaded!");
 });
-const express = require("express");
-const app = express();
-require("dotenv").config();
-app.use(express.json());
 
-const userRoutes = require("./routes/user");
+// ✅ User routes from routes/user.js
 app.use("/api", userRoutes);
 
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
